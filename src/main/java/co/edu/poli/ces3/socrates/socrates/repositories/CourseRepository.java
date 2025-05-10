@@ -8,6 +8,8 @@ import java.util.Objects;
 
 public class CourseRepository extends MysqlConnection implements ICrud {
 
+    public CourseRepository() throws Exception {
+    }
 
     /**
      *
