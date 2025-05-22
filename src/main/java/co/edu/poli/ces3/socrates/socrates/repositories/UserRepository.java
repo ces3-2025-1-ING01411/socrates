@@ -32,10 +32,20 @@ public class UserRepository extends MysqlConnection implements ICrud {
     }
 
     /**
+     * @param id
+     * @return
+     * @throws SQLException
+     */
+    @Override
+    public Object findById(int id) throws SQLException {
+        return null;
+    }
+
+    /**
      * @return
      */
     @Override
-    public List<User> select() throws SQLException {
+    public List<User> find() throws SQLException {
         //consultas precompiladas
         PreparedStatement pst = this.getConnection()
                 .prepareStatement("select * from users");
@@ -82,12 +92,13 @@ public class UserRepository extends MysqlConnection implements ICrud {
         return 0;
     }
 
+    /*
     public static void main(String[] args) {
         UserRepository usr = null;
         try {
             usr = new UserRepository();
 
-            for (User x: usr.select()) {
+            for (User x: usr.find()) {
                 System.out.println(x.getNames());
             }
 
@@ -97,4 +108,6 @@ public class UserRepository extends MysqlConnection implements ICrud {
 
         System.out.println(usr.getUrl());
     }
+
+     */
 }

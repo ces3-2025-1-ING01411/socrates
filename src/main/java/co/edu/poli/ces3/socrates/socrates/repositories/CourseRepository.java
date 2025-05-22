@@ -3,6 +3,7 @@ package co.edu.poli.ces3.socrates.socrates.repositories;
 import co.edu.poli.ces3.socrates.socrates.config.MysqlConnection;
 import co.edu.poli.ces3.socrates.socrates.interfaces.ICrud;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 
@@ -31,8 +32,18 @@ public class CourseRepository extends MysqlConnection implements ICrud {
      * @return
      */
     @Override
-    public List<Objects> select() {
+    public List<Objects> find() {
         return List.of();
+    }
+
+    /**
+     * @param id
+     * @return
+     * @throws SQLException
+     */
+    @Override
+    public Object findById(int id) throws SQLException {
+        return null;
     }
 
     /**

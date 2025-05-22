@@ -9,7 +9,8 @@ public interface ICrud {
     //asegurar que lo que se cree acá se implemente donde se llame
 
     int insert(); //usar generics
-    List<?> select() throws SQLException;
+    List<?> find() throws SQLException;
+    Object findById(int id) throws SQLException;
     int update(int id);
     double delete(int id);
 
