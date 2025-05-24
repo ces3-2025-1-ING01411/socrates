@@ -1,5 +1,7 @@
 package co.edu.poli.ces3.socrates.socrates.servlet;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import jakarta.servlet.ServletException;
@@ -51,5 +53,19 @@ public class MyServlet extends HttpServlet {
         }
         reader.close();
         return JsonParser.parseString(sb.toString()).getAsJsonObject();
+    }
+
+    protected Object convertJsonElementToFieldType(JsonElement jsonElement, Class<?> targetType) {
+
+        return switch (targetType.getName()) {
+            case "java.lang.String" -> jsonElement.getAsString();
+            case "int", "java.lang.Integer" -> jsonElement.getAsInt();
+            case "long", "java.lang.Long" -> jsonElement.getAsLong();
+            case "boolean", "java.lang.Boolean" -> jsonElement.getAsBoolean();
+            case "double", "java.lang.Double" -> jsonElement.getAsDouble();
+            case "float", "java.lang.Float" -> jsonElement.getAsFloat();
+            case "java.math.BigDecimal" -> jsonElement.getAsBigDecimal();
+            default -> new Gson().fromJson(jsonElement, targetType);
+        };
     }
 }

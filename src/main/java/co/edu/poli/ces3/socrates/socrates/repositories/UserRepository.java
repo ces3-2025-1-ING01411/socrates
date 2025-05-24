@@ -37,7 +37,7 @@ public class UserRepository extends MysqlConnection implements ICrud {
      * @throws SQLException
      */
     @Override
-    public Object findById(int id) throws SQLException {
+    public User findById(int id) throws SQLException {
         return null;
     }
 

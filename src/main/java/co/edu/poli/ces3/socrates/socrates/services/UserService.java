@@ -3,6 +3,7 @@ package co.edu.poli.ces3.socrates.socrates.services;
 import co.edu.poli.ces3.socrates.socrates.dao.User;
 import co.edu.poli.ces3.socrates.socrates.repositories.UserRepository;
 
+import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -26,6 +27,25 @@ public class UserService {
             throw new RuntimeException("Error fetching users: " + e.getMessage());
         } finally {
             return listUser;
+        }
+    }
+
+    public User findById(Integer id_user) {
+        User user = null;
+        try {
+            user = this.repository.findById(id_user);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching the user: " + e.getMessage());
+        } finally {
+            return  user;
+        }
+    }
+
+    public void upgradeUser(User userUpdate) {
+        Class<?> clazz = User.class;
+
+        for (Field field: clazz.getDeclaredFields()) {
+
         }
     }
 

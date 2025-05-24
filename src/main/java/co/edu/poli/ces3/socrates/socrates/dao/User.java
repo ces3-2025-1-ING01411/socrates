@@ -1,20 +1,40 @@
 package co.edu.poli.ces3.socrates.socrates.dao;
 
+import javax.persistence.Column;
 import java.util.Date;
 
 public class User {
+
     private Integer id;
+
     private String names;
+
+    @Column(name = "last_name")
     private String lastName;
+
     private Date birthdate;
+
     private String email;
+
+    @Column(name = "is_active")
     private Boolean isActive;
+
     private String phone;
+
     private String gender; //crear enum
+
     private String password;
+
+    @Column(name = "created_at")
     private Date createdAt;
+
+    @Column(name = "updated_at")
     private Date updatedAt;
+
     private Date deletedAt;
+
+    public User() {
+    }
 
     public User(String names, String lastName) {
         this.names = names;
