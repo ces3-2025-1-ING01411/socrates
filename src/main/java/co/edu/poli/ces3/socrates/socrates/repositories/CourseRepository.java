@@ -64,5 +64,10 @@ public class CourseRepository extends MysqlConnection implements ICrud {
         return 0;
     }
 
+    @Override
+    public Object upgrade(Object object) throws SQLException {
+        return null;
+    }
+
 
 }

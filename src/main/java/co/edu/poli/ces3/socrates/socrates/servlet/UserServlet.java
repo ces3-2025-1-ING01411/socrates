@@ -10,6 +10,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -58,8 +59,7 @@ public class UserServlet extends MyServlet {
         //leer y parsear el JSON recibido
         JsonObject jsonUser = getParamsFromBody(req);
         Class<?> classUser = User.class;
-        Field [] fields = classUser.getDeclaredFields();
-
+        Field[] fields = classUser.getDeclaredFields();
         User userUpdate = new User();
 
         try {
@@ -69,14 +69,24 @@ public class UserServlet extends MyServlet {
                     System.out.println("Nombre campo: " + f.getName());
                     f.setAccessible(true);
                     Class<?> fieldType = f.getType();
+
                     Object value = convertJsonElementToFieldType(jsonUser.get(f.getName()), fieldType);
+
+                    f.setAccessible(true);
                     f.set(userUpdate, value);
                 }
             }
 
             userUpdate.setId(Integer.parseInt(req.getParameter("id")));
 
-            userService.upgradeUser(userUpdate);
+            User user = userService.upgrade(userUpdate);
+
+            //userService.upgradeUser(userUpdate);
+
+            JSONObject json = new JSONObject(user);
+
+            out.println(json.toString());
+            out.flush();
 
         } catch (IllegalAccessException e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -88,7 +98,7 @@ public class UserServlet extends MyServlet {
             return;
         }
 
-        System.out.println("Usuario actualizado: " + userUpdate);
+//        System.out.println("Usuario actualizado: " + userUpdate);
 
         /*
         //recuperar la entidad que vamos a editar
@@ -149,7 +159,7 @@ public class UserServlet extends MyServlet {
         JSONArray json = new JSONArray(list);
         out.println(json);
          */
-        out.flush();
+        //out.flush();
     }
 
 

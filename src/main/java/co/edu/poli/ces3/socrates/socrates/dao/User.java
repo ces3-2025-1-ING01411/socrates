@@ -1,28 +1,38 @@
 package co.edu.poli.ces3.socrates.socrates.dao;
 
-import javax.persistence.Column;
+import co.edu.poli.ces3.socrates.socrates.utils.annotations.Column;
+import co.edu.poli.ces3.socrates.socrates.utils.annotations.Table;
+
 import java.util.Date;
 
+@Table(name = "users")
 public class User {
 
+    @Column(name = "id", primaryKey = true, autoIncrement = true)
     private Integer id;
 
+    @Column(name = "names")
     private String names;
 
     @Column(name = "last_name")
     private String lastName;
 
+    @Column(name = "birthdate")
     private Date birthdate;
 
+    @Column(name = "email")
     private String email;
 
     @Column(name = "is_active")
     private Boolean isActive;
 
+    @Column(name = "phone")
     private String phone;
 
+    @Column(name = "gender")
     private String gender; //crear enum
 
+    @Column(name = "password")
     private String password;
 
     @Column(name = "created_at")
@@ -31,6 +41,7 @@ public class User {
     @Column(name = "updated_at")
     private Date updatedAt;
 
+    @Column(name = "deleted_at")
     private Date deletedAt;
 
     public User() {

@@ -41,11 +41,11 @@ public class UserService {
         }
     }
 
-    public void upgradeUser(User userUpdate) {
-        Class<?> clazz = User.class;
-
-        for (Field field: clazz.getDeclaredFields()) {
-
+    public User upgrade(User userUpdate) {
+        try {
+            return (User)repository.upgrade(userUpdate);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
