@@ -2,6 +2,7 @@ package co.edu.poli.ces3.socrates.socrates.servlet;
 
 import co.edu.poli.ces3.socrates.socrates.dao.User;
 import co.edu.poli.ces3.socrates.socrates.services.UserService;
+import co.edu.poli.ces3.socrates.socrates.utils.HashUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -40,13 +41,6 @@ public class UserServlet extends MyServlet {
         List list = userService.getAllUsers();
         JSONArray json = new JSONArray(list);
         out.println(json);
-
-        /*
-        Gson gson = new Gson();
-        String json = gson.toJson(userService.getAllUsers());
-        out.println(json);
-
-         */
         out.flush();
     }
 
@@ -60,28 +54,25 @@ public class UserServlet extends MyServlet {
         JsonObject jsonUser = getParamsFromBody(req);
         Class<?> classUser = User.class;
         Field[] fields = classUser.getDeclaredFields();
-        User userUpdate = new User();
+        User userUpgrade = new User();
 
         try {
             for (Field f : fields) {
                 if (jsonUser.has(f.getName())) {
                     System.out.println("Nombre json: " + jsonUser.has(f.getName()));
                     System.out.println("Nombre campo: " + f.getName());
-                    f.setAccessible(true);
                     Class<?> fieldType = f.getType();
 
                     Object value = convertJsonElementToFieldType(jsonUser.get(f.getName()), fieldType);
 
                     f.setAccessible(true);
-                    f.set(userUpdate, value);
+                    f.set(userUpgrade, value);
                 }
             }
 
-            userUpdate.setId(Integer.parseInt(req.getParameter("id")));
+            userUpgrade.setId(Integer.parseInt(req.getParameter("id")));
 
-            User user = userService.upgrade(userUpdate);
-
-            //userService.upgradeUser(userUpdate);
+            User user = userService.upgrade(userUpgrade);
 
             JSONObject json = new JSONObject(user);
 
@@ -97,84 +88,121 @@ public class UserServlet extends MyServlet {
             out.println("{\"error\":\"Error al asignar el valor\"}");
             return;
         }
-
-//        System.out.println("Usuario actualizado: " + userUpdate);
-
-        /*
-        //recuperar la entidad que vamos a editar
-        int id = Integer.parseInt(req.getParameter("id"));
-        User user = userService.findById(id);
-        if (user==null) {
-            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            out.println("{\"error\":\"Usuario no encontrado\"}");
-            return;
-        }
-
-        //aplicar cambios con reflection
-        Class<?> classUser = User.class;
-        for (String key: jsonUser.keySet()) {
-            try {
-                Field field = classUser.getDeclaredField(key);
-                field.setAccessible(true);
-
-                JsonElement jsonValue = jsonUser.get(key);
-                Class<?> type = field.getType();
-
-                Object value = switch (type.getSimpleName()) {
-                    case "int" -> jsonValue.getAsInt();
-                    case "boolean" -> jsonValue.getAsBoolean();
-                    case "String" -> jsonValue.getAsString();
-                    case "Date" -> new java.util.Date(jsonValue.getAsLong());
-                    default -> throw new IllegalArgumentException(
-                            "Tipo no soportado: " + type.getName());
-                };
-
-                //asignar el valor
-                field.set(user, value);
-
-
-            } catch (NoSuchFieldException e) {
-                // El campo no existe en la entidad → 400 Bad Request
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                out.println("{\"error\":\"Campo '" + key + "' no existe\"}");
-                return;
-            } catch (IllegalAccessException | IllegalArgumentException e) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                out.println("{\"error\":\"Valor inválido para '" + key + "'\"}");
-                return;
-            }
-        }
-        */
-
-        //Field [] fields = classUser.getDeclaredFields();
-        /*
-        for (Field f : fields) {
-            System.out.println("Nombre campo: " + f.getName());
-        }
-
-         */
-
-        /*
-        List list = userService.updateUser();
-        JSONArray json = new JSONArray(list);
-        out.println(json);
-         */
-        //out.flush();
     }
 
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doPost(req, resp);
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+        PrintWriter out = resp.getWriter();
+
+        JsonObject jsonUser = getParamsFromBody(req);
+        Class<?> classUser = User.class;
+        Field[] fields = classUser.getDeclaredFields();
+        User userPost = new User();
+
+        try {
+            for (Field f: fields) {
+                if (jsonUser.has(f.getName())) {
+                    f.setAccessible(true);
+                    Class<?> fieldType = f.getType();
+                    if (f.getName().equals("password")) {
+                        String rawPassword = jsonUser.get(f.getName()).getAsString();
+                        String hashedPassword = HashUtil.sha256(rawPassword);
+                        f.set(userPost, hashedPassword);
+                    } else {
+                        Object value = convertJsonElementToFieldType(jsonUser.get(f.getName()), fieldType);
+                        f.set(userPost, value);
+                    }
+                }
+            }
+
+            User user = userService.create(userPost);
+            JSONObject response = new JSONObject(user);
+
+            out.println(response.toString());
+            out.flush();
+
+        } catch (IllegalAccessException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.println("{\"error\":\"Error al acceder a los campos\"}");
+            return;
+        } catch (IllegalArgumentException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.println("{\"error\":\"Error al asignar el valor\"}");
+            return;
+        }
+
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doPut(req, resp);
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+        PrintWriter out = resp.getWriter();
+
+        //leer y parsear el JSON recibido
+        JsonObject jsonUser = getParamsFromBody(req);
+        Class<?> classUser = User.class;
+        Field[] fields = classUser.getDeclaredFields();
+        User userUpdate = new User();
+
+        try {
+            for (Field f : fields) {
+                if (jsonUser.has(f.getName())) {
+
+                    Class<?> fieldType = f.getType();
+
+                    Object value = convertJsonElementToFieldType(jsonUser.get(f.getName()), fieldType);
+
+                    f.setAccessible(true);
+                    f.set(userUpdate, value);
+                }
+            }
+
+            userUpdate.setId(Integer.parseInt(req.getParameter("id")));
+
+            User user = userService.update(userUpdate);
+
+            JSONObject json = new JSONObject(user);
+
+            out.println(json.toString());
+            out.flush();
+
+        } catch (IllegalAccessException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.println("{\"error\":\"Error al acceder a los campos\"}");
+            return;
+        } catch (IllegalArgumentException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.println("{\"error\":\"Error al asignar el valor\"}");
+            return;
+        }
     }
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doDelete(req, resp);
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+
+        PrintWriter out = resp.getWriter();
+
+        try {
+            int id = Integer.parseInt(req.getParameter("id"));
+            boolean deletedUser = userService.delete(id);
+
+            if (deletedUser) {
+                out.println("{\"message\":\"Usuario eliminado con éxito\"}");
+            } else {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out.println("{\"error\":\"Usuario no encontrado\"}");
+            }
+
+            out.flush();
+        } catch (NumberFormatException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.println("{\"error\":\"ID inválido\"}");
+        }
     }
 }

@@ -3,7 +3,6 @@ package co.edu.poli.ces3.socrates.socrates.services;
 import co.edu.poli.ces3.socrates.socrates.dao.User;
 import co.edu.poli.ces3.socrates.socrates.repositories.UserRepository;
 
-import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -47,6 +46,26 @@ public class UserService {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public User create(User userCreate) {
+        try {
+            return (User)repository.insert(userCreate);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public User update(User userUpdate) {
+        try {
+            return (User)repository.update(userUpdate);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public boolean delete(int id) {
+        return repository.delete(id) > 0;
     }
 
 }

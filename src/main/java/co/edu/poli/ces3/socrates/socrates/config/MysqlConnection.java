@@ -116,4 +116,40 @@ abstract public class MysqlConnection {
             throw new RuntimeException("La clase " + clazz.getName() + " no tiene la anotación @Table");
         }
     }
+
+    public QueryResult getQueryInsertAndParams(Object data, Class<?> clazz) {
+        Table tableAnnotation = clazz.getAnnotation(Table.class);
+        LinkedList<Object> parameters = new LinkedList<>();
+        StringBuilder columns = new StringBuilder();
+        StringBuilder values = new StringBuilder();
+
+        if (tableAnnotation != null) {
+            String tableName = tableAnnotation.name();
+            for (Field field: clazz.getDeclaredFields()) {
+                Column column = field.getAnnotation(Column.class);
+                if (column != null && !column.autoIncrement()) {
+                    field.setAccessible(true);
+                    try {
+                        Object value = field.get(data);
+                        if (value != null) {
+                            columns.append(column.name()).append(", ");
+                            values.append("?, ");
+                            parameters.add(value);
+                        }
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            if (columns.length() > 0) {
+                columns.delete(columns.length()-2, columns.length());
+                values.delete(values.length()-2, values.length());
+
+                String finalSQL = "INSERT INTO " + tableName + " ( " + columns + " ) VALUES ( " + values + " )";
+                return new QueryResult(finalSQL, parameters);
+            }
+        }
+        return null;
+    }
 }

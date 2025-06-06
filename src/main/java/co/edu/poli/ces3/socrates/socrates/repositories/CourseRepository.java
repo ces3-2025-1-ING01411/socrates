@@ -24,8 +24,8 @@ public class CourseRepository extends MysqlConnection implements ICrud {
      * @return
      */
     @Override
-    public int insert() {
-        return 0;
+    public Object insert(Object object) {
+        return null;
     }
 
     /**
@@ -47,12 +47,12 @@ public class CourseRepository extends MysqlConnection implements ICrud {
     }
 
     /**
-     * @param id
+     * @param update
      * @return
      */
     @Override
-    public int update(int id) {
-        return 0;
+    public Object update(Object update) {
+        return null;
     }
 
     /**

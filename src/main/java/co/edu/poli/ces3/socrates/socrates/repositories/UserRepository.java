@@ -28,8 +28,28 @@ public class UserRepository extends MysqlConnection implements ICrud {
      * @return
      */
     @Override
-    public int insert() {
-        return 0;
+    public Object insert(Object userCreate) throws SQLException {
+        QueryResult queryResult = getQueryInsertAndParams(userCreate, User.class);
+
+        if (queryResult != null ) {
+            PreparedStatement stm = this.getConnection()
+                    .prepareStatement(queryResult.getSql(), PreparedStatement.RETURN_GENERATED_KEYS);
+
+            int i = 1;
+            for (Object value: queryResult.getParameters()) {
+                stm.setObject(i++, value);
+            }
+
+            if (stm.executeUpdate() > 0) {
+                ResultSet generatedKeys = stm.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    int id = generatedKeys.getInt(1);
+                    return this.findById(id);
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -38,7 +58,7 @@ public class UserRepository extends MysqlConnection implements ICrud {
      * @throws SQLException
      */
     @Override
-    public Object findById(int id) throws SQLException {
+    public User findById(int id) throws SQLException {
         PreparedStatement stm = this.getConnection()
                 .prepareStatement("SELECT * FROM users WHERE id = ?");
 
@@ -99,21 +119,36 @@ public class UserRepository extends MysqlConnection implements ICrud {
     }
 
     /**
-     * @param id
-     * @return
-     */
-    @Override
-    public int update(int id) {
-        return 0;
-    }
-
-    /**
      * @param userUpdate
      * @return
      */
     @Override
-    public Object upgrade(Object userUpdate) throws SQLException {
+    public User update(Object userUpdate) throws SQLException {
         QueryResult queryResult = getQueryUpdateAndParams(userUpdate, User.class);
+
+        if (queryResult != null) {
+            PreparedStatement stm = this.getConnection()
+                    .prepareStatement(queryResult.getSql());
+
+            int i = 1;
+            for (Object param: queryResult.getParameters()) {
+                stm.setObject(i++, param);
+            }
+
+            if (stm.executeUpdate() > 0) {
+                return this.findById(((User)userUpdate).getId());
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @param userUpgrade
+     * @return
+     */
+    @Override
+    public Object upgrade(Object userUpgrade) throws SQLException {
+        QueryResult queryResult = getQueryUpdateAndParams(userUpgrade, User.class);
 
         if (queryResult != null) {
             PreparedStatement stm = this.getConnection()
@@ -124,7 +159,7 @@ public class UserRepository extends MysqlConnection implements ICrud {
             }
 
             if (stm.executeUpdate() > 0) {
-                return this.findById(((User)userUpdate).getId());
+                return this.findById(((User)userUpgrade).getId());
             }
 
         }
@@ -137,7 +172,14 @@ public class UserRepository extends MysqlConnection implements ICrud {
      */
     @Override
     public double delete(int id) {
-        return 0;
+        try {
+            PreparedStatement stm = this.getConnection().prepareStatement("DELETE FROM users WHERE id = ?");
+            stm.setInt(1, id);
+            return stm.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return 0;
+        }
     }
 
     /*
