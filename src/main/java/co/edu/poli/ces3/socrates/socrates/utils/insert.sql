@@ -2,10 +2,26 @@ create database socrates;
 
 use socrates;
 
-create table socrates.users
+create table if not exists socrates.subjects
+(
+    id          int auto_increment
+    primary key,
+    code        varchar(6)                                                               not null,
+    name        varchar(200)                                                             not null,
+    description text                                                                     null,
+    credits     int                                                                      not null,
+    faculty     enum ('engineering', 'communication', 'schoolOfSports', 'basicSciences') null,
+    created_at  timestamp default CURRENT_TIMESTAMP                                      not null,
+    updated_at  timestamp default CURRENT_TIMESTAMP                                      not null on update CURRENT_TIMESTAMP,
+    deleted_at  timestamp                                                                null,
+    constraint subjects_pk
+    unique (code)
+    );
+
+create table if not exists socrates.users
 (
     id         int auto_increment
-        primary key,
+    primary key,
     names      varchar(150) charset utf8mb4            not null,
     last_name  varchar(180) charset utf8mb4            null,
     birthdate  date                                    not null,
@@ -13,13 +29,33 @@ create table socrates.users
     is_active  tinyint(1) default 0                    not null,
     phone      varchar(15) charset utf8mb4             null,
     gender     enum ('male', 'female') charset utf8mb4 null,
-    password   varchar(40)                             not null,
+    password   varchar(100)                            null,
     created_at timestamp  default CURRENT_TIMESTAMP    not null,
     updated_at timestamp  default CURRENT_TIMESTAMP    not null on update CURRENT_TIMESTAMP,
     deleted_at timestamp                               null
-)
+    )
     charset = utf8mb3;
 
+create table if not exists socrates.enrollment
+(
+    id_user         int                                                                                        not null,
+    id_subject      int                                                                                        not null,
+    date_enrollment timestamp                                                                                  not null,
+    status          enum ('active', 'inactive', 'canceled', 'finished', 'scheduled') default 'scheduled'       not null,
+    term            varchar(6)                                                                                 not null,
+    created_at      timestamp                                                        default CURRENT_TIMESTAMP not null,
+    updated_at      timestamp                                                        default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+    deleted_at      timestamp                                                                                  null,
+    primary key (id_user, id_subject),
+    constraint enrollment_id_subject_fk
+    foreign key (id_subject) references subjects (id)
+                                                                                                                        on update cascade,
+    constraint enrollment_id_user_fk
+    foreign key (id_user) references users (id)
+                                                                                                                        on update cascade
+    );
+
+------INSERTS---------
 /*
 SELECT *
 FROM users;
@@ -40,12 +76,7 @@ VALUES
     ('Andrés',   'Hernández',   '1988-09-30', 'andres.hernandez@example.com', 0, '3176789012', 'male',   SHA1('andresKey321')),
     ('Sara',     'López',       '1991-08-18', 'sara.lopez@example.com',       1, '3187890123', 'female', SHA1('saraLock654')),
     ('Diego',    'Díaz',        '1984-01-22', 'diego.diaz@example.com',       1, '3198901234', 'male',   SHA1('diegoPass111'));
-
 COMMIT;
-
-select * from socrates.users;
-select * from socrates.subjects;
-select * from socrates.enrollment;
 
 
 -- 2. Poblar SUBJECTS
@@ -59,6 +90,7 @@ VALUES
     ('SPO201', 'EntrenamientoFunc',         'Metodologías de entrenamiento funcional',        3, 'schoolOfSports'),
     ('SCI101', 'Química General',           'Fundamentos de química inorgánica',              4, 'basicSciences'),
     ('SCI201', 'Biología Celular',          'Estructura y función de la célula',              4, 'basicSciences');
+COMMIT;
 
 -- 3. Poblar ENROLLMENT para el usuario id = 1
 --    Asumimos que los ids de las asignaturas insertadas van del 1 al 8.
