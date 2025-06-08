@@ -101,7 +101,8 @@ abstract public class MysqlConnection {
             }
 
             if (hasFieldsToUpdate) {
-                sql.deleteCharAt(sql.length()-1);
+                System.out.println(sql + " " + (sql.length()-1));
+                sql.delete(sql.length()-2, sql.length());
                 sqlWhere.delete(sqlWhere.length()-5, sqlWhere.length()); // Eliminar el último " AND "
 
                 sql.append(sqlWhere);

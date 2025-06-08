@@ -3,8 +3,6 @@ package co.edu.poli.ces3.socrates.socrates.servlet;
 import co.edu.poli.ces3.socrates.socrates.dao.User;
 import co.edu.poli.ces3.socrates.socrates.services.UserService;
 import co.edu.poli.ces3.socrates.socrates.utils.HashUtil;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -15,7 +13,6 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.List;
 
@@ -38,10 +35,32 @@ public class UserServlet extends MyServlet {
         resp.setCharacterEncoding("UTF-8");
 
         PrintWriter out = resp.getWriter();
-        List list = userService.getAllUsers();
-        JSONArray json = new JSONArray(list);
-        out.println(json);
-        out.flush();
+
+        String idUserParam = req.getParameter("id");
+        boolean idUser = idUserParam != null && !idUserParam.isEmpty() && !idUserParam.equals("null");
+
+
+        if (idUser) {
+            int id = Integer.parseInt(idUserParam);
+            User user = userService.findById(id);
+            if (user != null) {
+                JSONObject json = new JSONObject(user);
+                out.println(json.toString());
+                out.flush();
+                return;
+            } else {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out.println("{\"error\":\"Usuario con id "+ idUserParam + " no existe\"}");
+                out.flush();
+                return;
+            }
+        } else {
+            List list = userService.getAllUsers();
+            JSONArray json = new JSONArray(list);
+            out.println(json.toString());
+            out.flush();
+            return;
+        }
     }
 
     @Override
@@ -50,44 +69,74 @@ public class UserServlet extends MyServlet {
         resp.setCharacterEncoding("UTF-8");
         PrintWriter out = resp.getWriter();
 
-        //leer y parsear el JSON recibido
-        JsonObject jsonUser = getParamsFromBody(req);
-        Class<?> classUser = User.class;
-        Field[] fields = classUser.getDeclaredFields();
-        User userUpgrade = new User();
+        String idUserParam = req.getParameter("id");
+        System.out.println("idUserParam: " + idUserParam);
 
-        try {
-            for (Field f : fields) {
-                if (jsonUser.has(f.getName())) {
-                    System.out.println("Nombre json: " + jsonUser.has(f.getName()));
-                    System.out.println("Nombre campo: " + f.getName());
-                    Class<?> fieldType = f.getType();
+        boolean idUser = idUserParam != null && !idUserParam.isEmpty() && !idUserParam.equals("null");
+        System.out.println("idUser: " + idUser);
 
-                    Object value = convertJsonElementToFieldType(jsonUser.get(f.getName()), fieldType);
-
-                    f.setAccessible(true);
-                    f.set(userUpgrade, value);
-                }
+        if (idUser) {
+            int idUserUpdate = Integer.parseInt(idUserParam);
+            User existsUser = userService.findById(idUserUpdate);
+            if (existsUser == null) {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out.println("{\"error\":\"Usuario con id "+ idUserParam + " no existe\"}");
+                out.flush();
+                return;
             }
 
-            userUpgrade.setId(Integer.parseInt(req.getParameter("id")));
+            System.out.println("sigue patch");
 
-            User user = userService.upgrade(userUpgrade);
+            //leer y parsear el JSON recibido
+            JsonObject jsonUser = getParamsFromBody(req);
+            Class<?> classUser = User.class;
+            Field[] fields = classUser.getDeclaredFields();
+            User userUpgrade = new User();
 
-            JSONObject json = new JSONObject(user);
 
-            out.println(json.toString());
+
+            try {
+                for (Field f : fields) {
+                    if (jsonUser.has(f.getName())) {
+                        f.setAccessible(true);
+                        Class<?> fieldType = f.getType();
+
+                        if (f.getName().equals("password")) {
+                            String rawPassword = jsonUser.get(f.getName()).getAsString();
+                            String hashedPassword = HashUtil.sha256(rawPassword);
+                            f.set(userUpgrade, hashedPassword);
+                        } else {
+                            Object value = convertJsonElementToFieldType(jsonUser.get(f.getName()), fieldType);
+                            f.set(userUpgrade, value);
+                        }
+                    }
+                }
+
+                userUpgrade.setId(Integer.parseInt(req.getParameter("id")));
+
+                User user = userService.upgrade(userUpgrade);
+
+                JSONObject json = new JSONObject(user);
+
+                out.println(json.toString());
+                out.flush();
+
+            } catch (IllegalAccessException e) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.println("{\"error\":\"Error al acceder a los campos\"}");
+                return;
+            } catch (IllegalArgumentException e) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.println("{\"error\":\"Error al asignar el valor\"}");
+                return;
+            }
+        } else {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.println("{\"error\":\"ID de usuario no proporcionado\"}");
             out.flush();
-
-        } catch (IllegalAccessException e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            out.println("{\"error\":\"Error al acceder a los campos\"}");
-            return;
-        } catch (IllegalArgumentException e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            out.println("{\"error\":\"Error al asignar el valor\"}");
             return;
         }
+
     }
 
 
@@ -142,43 +191,75 @@ public class UserServlet extends MyServlet {
         resp.setCharacterEncoding("UTF-8");
         PrintWriter out = resp.getWriter();
 
-        //leer y parsear el JSON recibido
-        JsonObject jsonUser = getParamsFromBody(req);
-        Class<?> classUser = User.class;
-        Field[] fields = classUser.getDeclaredFields();
-        User userUpdate = new User();
+        String idUserParam = req.getParameter("id");
+        System.out.println("idUserParam: " + idUserParam);
 
-        try {
-            for (Field f : fields) {
-                if (jsonUser.has(f.getName())) {
+        boolean idUser = idUserParam != null && !idUserParam.isEmpty() && !idUserParam.equals("null");
+        System.out.println("idUser: " + idUser);
 
-                    Class<?> fieldType = f.getType();
+        if (idUser) {
+            int idUserUpdate = Integer.parseInt(idUserParam);
+            User existsUser = userService.findById(idUserUpdate);
 
-                    Object value = convertJsonElementToFieldType(jsonUser.get(f.getName()), fieldType);
-
-                    f.setAccessible(true);
-                    f.set(userUpdate, value);
-                }
+            if (existsUser == null) {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out.println("{\"error\":\"Usuario con id "+ idUserParam + " no existe\"}");
+                out.flush();
+                return;
             }
 
-            userUpdate.setId(Integer.parseInt(req.getParameter("id")));
+            System.out.println("sigue put");
 
-            User user = userService.update(userUpdate);
+            //leer y parsear el JSON recibido
+            JsonObject jsonUser = getParamsFromBody(req);
+            Class<?> classUser = User.class;
+            Field[] fields = classUser.getDeclaredFields();
+            User userUpdate = new User();
 
-            JSONObject json = new JSONObject(user);
+            try {
+                for (Field f : fields) {
+                    if (jsonUser.has(f.getName())) {
+                        f.setAccessible(true);
+                        Class<?> fieldType = f.getType();
 
-            out.println(json.toString());
+                        if (f.getName().equals("password")) {
+                            String rawPassword = jsonUser.get(f.getName()).getAsString();
+                            String hashedPassword = HashUtil.sha256(rawPassword);
+                            f.set(userUpdate, hashedPassword);
+                        } else {
+                            Object value = convertJsonElementToFieldType(jsonUser.get(f.getName()), fieldType);
+                            f.set(userUpdate, value);
+                        }
+                    }
+                }
+
+                userUpdate.setId(Integer.parseInt(req.getParameter("id")));
+
+                User user = userService.update(userUpdate);
+
+                JSONObject json = new JSONObject(user);
+
+                out.println(json.toString());
+                out.flush();
+
+            } catch (IllegalAccessException e) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.println("{\"error\":\"Error al acceder a los campos\"}");
+                return;
+            } catch (IllegalArgumentException e) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.println("{\"error\":\"Error al asignar el valor\"}");
+                return;
+            }
+
+
+        } else {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.println("{\"error\":\"ID de usuario no proporcionado\"}");
             out.flush();
-
-        } catch (IllegalAccessException e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            out.println("{\"error\":\"Error al acceder a los campos\"}");
-            return;
-        } catch (IllegalArgumentException e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            out.println("{\"error\":\"Error al asignar el valor\"}");
             return;
         }
+
     }
 
     @Override
@@ -189,7 +270,29 @@ public class UserServlet extends MyServlet {
         PrintWriter out = resp.getWriter();
 
         try {
-            int id = Integer.parseInt(req.getParameter("id"));
+            String idUserParam = req.getParameter("id");
+            System.out.println("idUserParam: " + idUserParam);
+
+            boolean idUser = idUserParam != null && !idUserParam.isEmpty() && !idUserParam.equals("null");
+            System.out.println("idUser: " + idUser);
+
+            if (!idUser) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.println("{\"error\":\"ID de usuario no proporcionado\"}");
+                out.flush();
+                return;
+            }
+
+            int id = Integer.parseInt(idUserParam);
+            User user = userService.findById(id);
+
+            if (user == null) {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out.println("{\"error\":\"Usuario con id "+ idUserParam + " no existe\"}");
+                out.flush();
+                return;
+            }
+
             boolean deletedUser = userService.delete(id);
 
             if (deletedUser) {

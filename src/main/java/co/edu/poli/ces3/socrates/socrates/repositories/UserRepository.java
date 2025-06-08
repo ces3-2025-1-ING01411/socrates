@@ -125,6 +125,9 @@ public class UserRepository extends MysqlConnection implements ICrud {
     @Override
     public User update(Object userUpdate) throws SQLException {
         QueryResult queryResult = getQueryUpdateAndParams(userUpdate, User.class);
+        System.out.println(queryResult.getSql());
+        System.out.println("params------------");
+        System.out.println(queryResult.getParameters());
 
         if (queryResult != null) {
             PreparedStatement stm = this.getConnection()
