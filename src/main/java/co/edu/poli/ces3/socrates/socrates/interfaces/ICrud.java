@@ -13,6 +13,6 @@ public interface ICrud {
     Object upgrade(Object object) throws SQLException;
     Object update(Object object) throws SQLException;
     Object insert(Object object) throws SQLException;
-    double delete(int id);
+    double delete(int id) throws SQLException;
 
 }

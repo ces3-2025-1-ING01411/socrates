@@ -71,7 +71,7 @@ abstract public class MysqlConnection {
         return this.connection;
     }
 
-    public QueryResult getQueryUpdateAndParams(Object data, Class<?> clazz) {
+    public QueryResult getQueryUpgradeAndParams(Object data, Class<?> clazz) {
         boolean hasFieldsToUpdate = false;
         Table tableAnnotation = clazz.getAnnotation(Table.class);
         LinkedList<Object> valuesFieldsToUpdate = new LinkedList<>();
@@ -118,6 +118,66 @@ abstract public class MysqlConnection {
         }
     }
 
+    public QueryResult getQueryUpdateAndParams(Object data, Class<?> clazz) {
+        Table tableAnnotation = clazz.getAnnotation(Table.class);
+        LinkedList<Object> valuesFieldsToUpdate = new LinkedList<>();
+        LinkedList<Object> valuesFieldsPrimaryKey = new LinkedList<>();
+        boolean hasFieldsToUpdate = false;
+
+         // Verificar si la clase tiene la anotación @Table
+         // Si no tiene la anotación, lanzar una excepción
+        if (tableAnnotation != null) {
+            StringBuilder sql = new StringBuilder("UPDATE " + tableAnnotation.name() + " SET ");
+            StringBuilder sqlWhere = new StringBuilder(" WHERE ");
+            try {
+                for (Field field: clazz.getDeclaredFields()) {
+                    Column column = field.getAnnotation(Column.class);
+                    field.setAccessible(true);
+                    Object value = field.get(data);
+
+                    //Validar campos requeridos
+                    if (column != null && !column.nullable() && !column.autoIncrement() && !column.primaryKey()) {
+                        System.out.println(column.nullable());
+                        if (value == null) {
+                            throw new RuntimeException("El campo " + column.name() + " no puede ser nulo");
+                        }
+                    }
+
+                    if (column != null && value != null) {
+                        if (!column.primaryKey()) {
+                            sql.append(column.name()).append(" = ?, ");
+                            valuesFieldsToUpdate.add(field.get(data));
+                            hasFieldsToUpdate = true;
+                        } else {
+                            sqlWhere.append(column.name()).append(" = ? AND ");
+                            valuesFieldsPrimaryKey.add(field.get(data));
+                        }
+                    }
+
+                }
+            } catch (IllegalAccessException e) {
+                //throw new RuntimeException("Error al acceder a los campos de la clase: " + clazz.getName(), e);
+                System.out.println(e.getMessage());
+            }
+
+            if (hasFieldsToUpdate) {
+                System.out.println(sql + " " + (sql.length()-1));
+                sql.delete(sql.length()-2, sql.length());
+                sqlWhere.delete(sqlWhere.length()-5, sqlWhere.length()); // Eliminar el último " AND "
+
+                sql.append(sqlWhere);
+
+                valuesFieldsToUpdate.addAll(valuesFieldsPrimaryKey);
+
+                return new QueryResult(sql.toString(), valuesFieldsToUpdate);
+            }
+
+            return null;
+        } else {
+            throw new RuntimeException("La clase " + clazz.getName() + " no tiene la anotación @Table");
+        }
+    }
+
     public QueryResult getQueryInsertAndParams(Object data, Class<?> clazz) {
         Table tableAnnotation = clazz.getAnnotation(Table.class);
         LinkedList<Object> parameters = new LinkedList<>();
@@ -126,21 +186,30 @@ abstract public class MysqlConnection {
 
         if (tableAnnotation != null) {
             String tableName = tableAnnotation.name();
-            for (Field field: clazz.getDeclaredFields()) {
-                Column column = field.getAnnotation(Column.class);
-                if (column != null && !column.autoIncrement()) {
+            try {
+                for (Field field: clazz.getDeclaredFields()) {
                     field.setAccessible(true);
-                    try {
-                        Object value = field.get(data);
-                        if (value != null) {
-                            columns.append(column.name()).append(", ");
-                            values.append("?, ");
-                            parameters.add(value);
+                    Column column = field.getAnnotation(Column.class);
+                    Object value = field.get(data);
+
+                    //Validar campos requeridos
+                    if (column != null && !column.nullable() && !column.autoIncrement() && !column.primaryKey()) {
+                        System.out.println(column.nullable());
+                        if (value == null) {
+                            throw new RuntimeException("El campo " + column.name() + " no puede ser nulo");
                         }
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
+                    }
+
+                    if (column != null && !column.autoIncrement()) {
+                            if (value != null) {
+                                columns.append(column.name()).append(", ");
+                                values.append("?, ");
+                                parameters.add(value);
+                            }
                     }
                 }
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
             }
 
             if (columns.length() > 0) {
@@ -152,5 +221,37 @@ abstract public class MysqlConnection {
             }
         }
         return null;
+    }
+
+    public QueryResult getQueryDeleteAndParams(Object data, Class<?> clazz) {
+        Table tableAnnotation = clazz.getAnnotation(Table.class);
+        LinkedList<Object> valuesFieldsPrimaryKey = new LinkedList<>();
+
+        if (tableAnnotation != null) {
+            StringBuilder sql = new StringBuilder("DELETE FROM " + tableAnnotation.name() + " WHERE ");
+            try {
+                for (Field field : clazz.getDeclaredFields()) {
+                    Column column = field.getAnnotation(Column.class);
+                    field.setAccessible(true);
+                    Object value = field.get(data);
+
+                    if (column != null && column.primaryKey() && value != null) {
+                        sql.append(column.name()).append(" = ? AND ");
+                        valuesFieldsPrimaryKey.add(value);
+                    }
+                }
+            } catch (IllegalAccessException e) {
+                System.out.println(e.getMessage());
+            }
+
+            if (!valuesFieldsPrimaryKey.isEmpty()) {
+                sql.delete(sql.length() - 5, sql.length()); // Eliminar el último " AND "
+                return new QueryResult(sql.toString(), valuesFieldsPrimaryKey);
+            } else {
+                throw new RuntimeException("No se encontraron campos primaryKey con valor para eliminar.");
+            }
+        } else {
+            throw new RuntimeException("La clase " + clazz.getName() + " no tiene la anotación @Table");
+        }
     }
 }

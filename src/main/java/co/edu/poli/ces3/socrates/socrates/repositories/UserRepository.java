@@ -4,7 +4,9 @@ import co.edu.poli.ces3.socrates.socrates.config.MysqlConnection;
 import co.edu.poli.ces3.socrates.socrates.config.QueryResult;
 import co.edu.poli.ces3.socrates.socrates.dao.User;
 import co.edu.poli.ces3.socrates.socrates.interfaces.ICrud;
+import co.edu.poli.ces3.socrates.socrates.utils.annotations.Column;
 
+import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -124,6 +126,7 @@ public class UserRepository extends MysqlConnection implements ICrud {
      */
     @Override
     public User update(Object userUpdate) throws SQLException {
+
         QueryResult queryResult = getQueryUpdateAndParams(userUpdate, User.class);
         System.out.println(queryResult.getSql());
         System.out.println("params------------");
@@ -151,7 +154,7 @@ public class UserRepository extends MysqlConnection implements ICrud {
      */
     @Override
     public Object upgrade(Object userUpgrade) throws SQLException {
-        QueryResult queryResult = getQueryUpdateAndParams(userUpgrade, User.class);
+        QueryResult queryResult = getQueryUpgradeAndParams(userUpgrade, User.class);
 
         if (queryResult != null) {
             PreparedStatement stm = this.getConnection()
@@ -174,15 +177,27 @@ public class UserRepository extends MysqlConnection implements ICrud {
      * @return
      */
     @Override
-    public double delete(int id) {
+    public double delete(int id) throws SQLException {
         try {
-            PreparedStatement stm = this.getConnection().prepareStatement("DELETE FROM users WHERE id = ?");
-            stm.setInt(1, id);
-            return stm.executeUpdate();
-        } catch (SQLException e) {
+
+            User userDelete = this.findById(id);
+            if (userDelete == null) {
+                return 0;
+            }
+
+            QueryResult queryResult = getQueryDeleteAndParams(userDelete, User.class);
+            if (queryResult != null) {
+                PreparedStatement stm = this.getConnection().prepareStatement(queryResult.getSql());
+                int i = 1;
+                for (Object param : queryResult.getParameters()) {
+                    stm.setObject(i++, param);
+                }
+                return stm.executeUpdate();
+            }
+        } catch (Exception e) {
             e.printStackTrace();
-            return 0;
         }
+        return 0;
     }
 
     /*

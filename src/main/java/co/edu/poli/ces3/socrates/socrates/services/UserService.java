@@ -65,7 +65,11 @@ public class UserService {
     }
 
     public boolean delete(int id) {
-        return repository.delete(id) > 0;
+        try {
+            return repository.delete(id) > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error deleting the user: " + e.getMessage());
+        }
     }
 
 }

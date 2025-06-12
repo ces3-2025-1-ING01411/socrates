@@ -11,7 +11,7 @@ public class User {
     @Column(name = "id", primaryKey = true, autoIncrement = true)
     private Integer id;
 
-    @Column(name = "names")
+    @Column(name = "names", nullable = false)
     private String names;
 
     @Column(name = "last_name")
@@ -20,7 +20,7 @@ public class User {
     @Column(name = "birthdate")
     private Date birthdate;
 
-    @Column(name = "email")
+    @Column(name = "email", nullable = false)
     private String email;
 
     @Column(name = "is_active")
@@ -32,7 +32,7 @@ public class User {
     @Column(name = "gender")
     private String gender; //crear enum
 
-    @Column(name = "password")
+    @Column(name = "password", nullable = false)
     private String password;
 
     @Column(name = "created_at")

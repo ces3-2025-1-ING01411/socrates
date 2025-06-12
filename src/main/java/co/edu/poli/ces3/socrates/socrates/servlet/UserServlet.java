@@ -93,8 +93,6 @@ public class UserServlet extends MyServlet {
             Field[] fields = classUser.getDeclaredFields();
             User userUpgrade = new User();
 
-
-
             try {
                 for (Field f : fields) {
                     if (jsonUser.has(f.getName())) {
@@ -112,7 +110,7 @@ public class UserServlet extends MyServlet {
                     }
                 }
 
-                userUpgrade.setId(Integer.parseInt(req.getParameter("id")));
+                userUpgrade.setId(idUserUpdate);
 
                 User user = userService.upgrade(userUpgrade);
 
@@ -233,7 +231,7 @@ public class UserServlet extends MyServlet {
                     }
                 }
 
-                userUpdate.setId(Integer.parseInt(req.getParameter("id")));
+                userUpdate.setId(idUserUpdate);
 
                 User user = userService.update(userUpdate);
 
